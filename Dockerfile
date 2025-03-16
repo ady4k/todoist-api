@@ -29,4 +29,4 @@ COPY --from=build /app/target/todoist-api-1.0.0.jar todoist-api-1.0.0.jar
 EXPOSE 8080
 
 # Command to run the app
-ENTRYPOINT ["java", "-jar", "todoist-api-1.0.0.jar"]
+ENTRYPOINT ["java", "-jar", "todoist-api-1.0.0.jar", "--spring.profiles.active=${SPRING_PROFILES_ACTIVE}"]

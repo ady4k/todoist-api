@@ -4,6 +4,7 @@ services:
     env_file:
       - .env
     environment:
+      - SPRING_PROFILES_ACTIVE=dev
       - CONNECTION_STRING=${CONNECTION_STRING_DOCKER}
     ports:
       - "8080:8080"
