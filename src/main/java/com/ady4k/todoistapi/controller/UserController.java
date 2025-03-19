@@ -2,7 +2,6 @@ package com.ady4k.todoistapi.controller;
 
 import com.ady4k.todoistapi.dto.UserDto;
 import com.ady4k.todoistapi.service.UserService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -11,8 +10,11 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/users")
 public class UserController {
-    @Autowired
     private UserService userService;
+
+    public UserController(UserService userService) {
+        this.userService = userService;
+    }
 
     @GetMapping
     public ResponseEntity<List<UserDto>> getAllUsers() {

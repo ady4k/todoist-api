@@ -7,12 +7,14 @@ import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import lombok.experimental.UtilityClass;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.core.userdetails.UserDetails;
 
 import javax.crypto.SecretKey;
 import java.util.Date;
 
 @UtilityClass
 public class JwtUtil {
+
     @Value("${JWT_KEY}")
     private String JWT_KEY;
 
@@ -25,9 +27,9 @@ public class JwtUtil {
                 .compact();
     }
 
-    public boolean isTokenValid(String token, UserDto userDto) {
+    public boolean isTokenValid(String token, UserDetails userDetails) {
         final String username = extractUsername(token);
-        return username.equals(userDto.getUsername()) && !isTokenExpired(token);
+        return username.equals(userDetails.getUsername()) && !isTokenExpired(token);
     }
 
     public String extractUsername(String token) {
