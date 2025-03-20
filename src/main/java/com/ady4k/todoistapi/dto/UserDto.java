@@ -2,6 +2,7 @@ package com.ady4k.todoistapi.dto;
 
 import lombok.*;
 
+@Data
 @Getter
 @Setter
 @NoArgsConstructor

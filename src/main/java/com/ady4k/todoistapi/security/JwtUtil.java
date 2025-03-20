@@ -6,7 +6,6 @@ import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import lombok.experimental.UtilityClass;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import javax.crypto.SecretKey;
@@ -14,9 +13,7 @@ import java.util.Date;
 
 @UtilityClass
 public class JwtUtil {
-
-    @Value("${JWT_KEY}")
-    private String JWT_KEY;
+    private static final String KEY = System.getenv("SECRET_KEY");
 
     public String generateToken(UserDto userDto) {
         return Jwts.builder()
@@ -55,7 +52,7 @@ public class JwtUtil {
     }
 
     private SecretKey getSigningKey() {
-        return Keys.hmacShaKeyFor(JWT_KEY.getBytes());
+        return Keys.hmacShaKeyFor(KEY.getBytes());
     }
 
     private boolean isTokenExpired(String token) {

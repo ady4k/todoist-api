@@ -33,7 +33,7 @@ public class UserService implements UserDetailsService {
 
     public UserDto getUserById(Long id) {
         User user = userRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("User with id " + id + " not found."));
+                .orElseThrow(() -> new ResourceNotFoundException("User with id " + id + " not found"));
         return new UserDto(user.getId(), user.getUsername());
     }
 
