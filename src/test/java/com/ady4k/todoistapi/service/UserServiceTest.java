@@ -10,7 +10,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -20,8 +19,9 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class UserServiceTest {
@@ -45,112 +45,132 @@ class UserServiceTest {
 
     @Test
     void getAllUsers_UsersInDb_ReturnsListOfUserDto() {
+        // Arrange
         List<UserDto> expected = List.of(
-            new UserDto(1L, "test",  null),
-            new UserDto(2L, "test2", null)
+                new UserDto(1L, "test", null),
+                new UserDto(2L, "test2", null)
         );
         List<User> users = List.of(
-            new User(1L, "test", "pass"),
-            new User(2L, "test2", "pass2")
+                new User(1L, "test", "pass"),
+                new User(2L, "test2", "pass2")
         );
-        Mockito.when(userRepository.findAll()).thenReturn(users);
+        when(userRepository.findAll()).thenReturn(users);
 
+        // Act
         List<UserDto> result = userService.getAllUsers();
 
-        assertThat(result)
-                .isNotNull()
-                .hasSize(2)
-                .containsExactlyElementsOf(expected);
+        // Assert
+        assertThat(result).isNotNull().hasSize(2).containsExactlyElementsOf(expected);
     }
 
     @Test
     void getUserById_UserExists_ReturnCorrectUserDto() {
-        Mockito.when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        // Arrange
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
 
+        // Act
         UserDto result = userService.getUserById(1L);
 
-        assertNotNull(result);
+        // Assert
+        assertThat(result).isNotNull();
         assertThat(result.getUsername()).isEqualTo("test");
     }
 
     @Test
     void getUserById_UserNotExisting_Throw() {
-        Mockito.when(userRepository.findById(1L)).thenThrow(new ResourceNotFoundException("User with id 1 not found"));
+        // Arrange
+        when(userRepository.findById(1L)).thenThrow(new ResourceNotFoundException("User with id 1 not found"));
+
+        // Act & Assert
         ResourceNotFoundException thrown = assertThrows(
                 ResourceNotFoundException.class,
                 () -> userService.getUserById(1L),
                 "Expected getUserById(1) to throw but it didn't"
         );
-
-        assertTrue(thrown.getMessage().contains("User with id 1 not found"));
+        assertThat(thrown.getMessage().contains("User with id 1 not found")).isTrue();
     }
 
     @Test
     void getUserByUsername_UserExists_ReturnCorrectUserDto() {
-        Mockito.when(userRepository.findByUsername("test")).thenReturn(Optional.of(user));
+        // Arrange
+        when(userRepository.findByUsername("test")).thenReturn(Optional.of(user));
 
+        // Act
         UserDto result = userService.getUserByUsername("test");
 
-        assertNotNull(result);
+        // Assert
+        assertThat(result).isNotNull();
         assertThat(result.getUsername()).isEqualTo("test");
     }
 
     @Test
     void getUserByUsername_UserNotExisting_Throw() {
-        Mockito.when(userRepository.findByUsername("test")).thenThrow(new ResourceNotFoundException("User with username test not found"));
+        // Arrange
+        when(userRepository.findByUsername("test")).thenThrow(new ResourceNotFoundException("User with username test not found"));
 
+        // Act & Assert
         ResourceNotFoundException thrown = assertThrows(
                 ResourceNotFoundException.class,
                 () -> userService.getUserByUsername("test"),
                 "Expected getUserByUsername(\"test\") to throw but it didn't"
         );
-        assertTrue(thrown.getMessage().contains("User with username test not found"));
+        assertThat(thrown.getMessage().contains("User with username test not found")).isTrue();
     }
 
     @Test
     void createUser_UsernameNotTaken_CreatesSuccessfully() {
-        Mockito.when(userRepository.findByUsername("test")).thenReturn(Optional.empty());
-        Mockito.when(userRepository.save(any(User.class))).thenReturn(user);
-        Mockito.when(passwordEncoder.encode("pass")).thenReturn("pass");
+        // Arrange
+        when(userRepository.findByUsername("test")).thenReturn(Optional.empty());
+        when(userRepository.save(any(User.class))).thenReturn(user);
+        when(passwordEncoder.encode("pass")).thenReturn("pass");
 
+        // Act
         UserDto result = userService.createUser(userDto);
 
-        assertNotNull(result);
+        // Arrange
+        assertThat(result).isNotNull();
         assertThat(result.getUsername()).isEqualTo("test");
     }
 
     @Test
     void createUser_UsernameIsTaken_Throw() {
-        Mockito.when(userRepository.findByUsername("test")).thenReturn(Optional.of(user));
+        // Arrange
+        when(userRepository.findByUsername("test")).thenReturn(Optional.of(user));
 
+        // Act & Assert
         AlreadyExistsException thrown = assertThrows(
                 AlreadyExistsException.class,
                 () -> userService.createUser(userDto),
                 "Expected createUser(userDto) to throw but it didn't"
         );
-        assertTrue(thrown.getMessage().contains("An user with the given username already exists"));
+        assertThat(thrown.getMessage().contains("An user with the given username already exists")).isTrue();
     }
 
     @Test
     void loadUserByUsername_UserExists_ReturnUserDetails() {
-        Mockito.when(userRepository.findByUsername("test")).thenReturn(Optional.of(user));
+        // Arrange
+        when(userRepository.findByUsername("test")).thenReturn(Optional.of(user));
 
+        // Act
         UserDetails result = userService.loadUserByUsername("test");
 
-        assertNotNull(result);
+        // Assert
+        assertThat(result).isNotNull();
         assertThat(result.getUsername()).isEqualTo("test");
         assertThat(result.getPassword()).isEqualTo("pass");
     }
 
     @Test
     void loadUserByUsername_UserNotExisting_Throw() {
-        Mockito.when(userRepository.findByUsername("test")).thenReturn(Optional.empty());
+        // Arrange
+        when(userRepository.findByUsername("test")).thenReturn(Optional.empty());
 
+        // Act & Assert
         UsernameNotFoundException thrown = assertThrows(
                 UsernameNotFoundException.class,
                 () -> userService.loadUserByUsername("test"),
                 "Expected loadUserByUsername(\"test\") to throw but it didn't"
         );
-        assertTrue(thrown.getMessage().contains("User not found"));
+        assertThat(thrown.getMessage().contains("User not found")).isTrue();
     }
 }

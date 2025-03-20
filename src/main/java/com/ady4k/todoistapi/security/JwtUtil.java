@@ -14,12 +14,13 @@ import java.util.Date;
 @UtilityClass
 public class JwtUtil {
     private static final String KEY = System.getenv("SECRET_KEY");
+    private static final int EXPIRY_TIME = 1000 * 60 * 60;
 
     public String generateToken(UserDto userDto) {
         return Jwts.builder()
                 .subject(userDto.getUsername())
                 .issuedAt(new Date(System.currentTimeMillis()))
-                .expiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60))
+                .expiration(new Date(System.currentTimeMillis() + EXPIRY_TIME))
                 .signWith(getSigningKey())
                 .compact();
     }
