@@ -23,7 +23,7 @@ import java.util.List;
 @EnableWebSecurity
 public class SecurityConfig {
     @Autowired
-    private  JwtAuthFilter jwtAuthFilter;
+    private JwtAuthFilter jwtAuthFilter;
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
