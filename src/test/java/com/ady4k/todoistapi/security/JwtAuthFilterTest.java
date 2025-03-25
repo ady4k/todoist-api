@@ -1,5 +1,7 @@
 package com.ady4k.todoistapi.security;
 
+import com.ady4k.todoistapi.dto.UserDto;
+import com.ady4k.todoistapi.service.TokenService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -16,6 +18,9 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
+
+import java.io.PrintWriter;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -28,6 +33,9 @@ class JwtAuthFilterTest {
 
     @Mock
     private UserDetailsService userDetailsService;
+
+    @Mock
+    private TokenService tokenService;
 
     @Mock
     private FilterChain filterChain;
@@ -52,11 +60,11 @@ class JwtAuthFilterTest {
         UserDetails userDetails = User.withUsername(username).password("password").roles("USER").build();
 
         when(userDetailsService.loadUserByUsername(username)).thenReturn(userDetails);
+        when(tokenService.isTokenValid(any(String.class), any(UserDto.class))).thenReturn(true);
         when(request.getHeader("Authorization")).thenReturn(authHeader);
 
         try (MockedStatic<JwtUtil> jwtUtil = Mockito.mockStatic(JwtUtil.class)) {
             jwtUtil.when(() -> JwtUtil.extractUsername(any(String.class))).thenReturn(username);
-            jwtUtil.when(() -> JwtUtil.isTokenValid(any(String.class), any(UserDetails.class))).thenReturn(true);
 
             // Act
             jwtAuthFilter.doFilterInternal(request, response, filterChain);
@@ -69,21 +77,41 @@ class JwtAuthFilterTest {
     }
 
     @Test
+    void testDoFilterInternal_WithAuthHeaderAlreadyExisting() throws Exception {
+        // Arrange
+        UserDetails userDetails = User.withUsername("test").password("password").roles("USER").build();
+        UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+        authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+        SecurityContextHolder.getContext().setAuthentication(authToken);
+
+        // Act
+        jwtAuthFilter.doFilterInternal(request, response, filterChain);
+
+        // Assert
+        verify(filterChain, times(1)).doFilter(request, response);
+    }
+
+    @Test
     void testDoFilterInternal_WithInvalidToken() throws Exception {
         // Arrange
         String token = "invalid-jwt-token";
         String authHeader = "Bearer " + token;
 
+        when(request.getHeader("Authorization")).thenReturn(authHeader);
+
+        PrintWriter mockWriter = mock(PrintWriter.class);
+        when(response.getWriter()).thenReturn(mockWriter);
+
         try (MockedStatic<JwtUtil> jwtUtil = Mockito.mockStatic(JwtUtil.class)) {
             jwtUtil.when(() -> JwtUtil.extractUsername(any(String.class))).thenReturn("testuser");
-            jwtUtil.when(() -> JwtUtil.isTokenValid(any(String.class), any(UserDetails.class))).thenReturn(false);
-            jwtUtil.when(() -> request.getHeader("Authorization")).thenReturn(authHeader);
 
             // Act
             jwtAuthFilter.doFilterInternal(request, response, filterChain);
 
             // Assert
-            verify(filterChain, times(1)).doFilter(request, response);
+            verify(response, times(1)).setStatus(HttpServletResponse.SC_FORBIDDEN);
+            verify(response, times(1)).getWriter();
+            verify(filterChain, never()).doFilter(request, response);
             assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
         }
     }
@@ -93,11 +121,16 @@ class JwtAuthFilterTest {
         // Arrange
         when(request.getHeader("Authorization")).thenReturn(null);
 
+        PrintWriter mockWriter = mock(PrintWriter.class);
+        when(response.getWriter()).thenReturn(mockWriter);
+
         // Act
         jwtAuthFilter.doFilterInternal(request, response, filterChain);
 
         // Assert
-        verify(filterChain, times(1)).doFilter(request, response);
+        verify(response, times(1)).setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+        verify(response, times(1)).getWriter();
+        verify(filterChain, never()).doFilter(request, response);
         assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
     }
 
@@ -106,14 +139,18 @@ class JwtAuthFilterTest {
         // Arrange
         String token = "invalid-jwt-token";
         String authHeader = "NotBearer " + token;
-
         when(request.getHeader("Authorization")).thenReturn(authHeader);
+
+        PrintWriter mockWriter = mock(PrintWriter.class);
+        when(response.getWriter()).thenReturn(mockWriter);
 
         // Act
         jwtAuthFilter.doFilterInternal(request, response, filterChain);
 
         // Assert
-        verify(filterChain, times(1)).doFilter(request, response);
+        verify(response, times(1)).setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+        verify(response, times(1)).getWriter();
+        verify(filterChain, never()).doFilter(request, response);
         assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
     }
 }

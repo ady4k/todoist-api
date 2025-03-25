@@ -23,8 +23,9 @@ Use VM option `-Dspring.profiles.active=<profile>` in IntelliJ.
 
 ## Testing:
 Testing requires the `SECRET_KEY` environmental variable to be set manually in order to make sure the static utiliy class which manages JWTs has a signing key.
-The `TOKEN_EXPIRATION_TIME_MILLIS` variable is also needed in order to instantiate the caching class.
 It does not matter what you put there, just make sure it's long enough.
+
+The `TOKEN_EXPIRATION_TIME_MILLIS` variable is also needed in order to instantiate the caching class.
 
 ## Running the application:
 After configuring the app correctly using the steps above, the application can be ran directly in IntelliJ or use `docker-compose.yaml` to setup and use the dev container.

@@ -1,11 +1,11 @@
 package com.ady4k.todoistapi.security;
 
+import com.ady4k.todoistapi.dto.UserDto;
+import com.ady4k.todoistapi.service.TokenService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -19,33 +19,53 @@ import java.io.IOException;
 @Component
 public class JwtAuthFilter extends OncePerRequestFilter {
     private final UserDetailsService userDetailsService;
+    private final TokenService tokenService;
 
-    @Autowired
-    public JwtAuthFilter(@Lazy UserDetailsService userDetailsService) {
+    public JwtAuthFilter(UserDetailsService userDetailsService, TokenService tokenService) {
         this.userDetailsService = userDetailsService;
+        this.tokenService = tokenService;
     }
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
         String authHeader = request.getHeader("Authorization");
+        if (SecurityContextHolder.getContext().getAuthentication() != null) {
+            filterChain.doFilter(request, response);
+            return;
+        }
 
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             filterChain.doFilter(request, response);
+            sendErrorResponse(response, HttpServletResponse.SC_UNAUTHORIZED, "Authorization header is either missing or invalid");
             return;
         }
 
         String token = authHeader.substring(7);
         String username = JwtUtil.extractUsername(token);
 
-        if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-            UserDetails userDetails = userDetailsService.loadUserByUsername(username);
-
-            if (JwtUtil.isTokenValid(token, userDetails)) {
-                UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
-                authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                SecurityContextHolder.getContext().setAuthentication(authToken);
-            }
+        if (username == null) {
+            sendErrorResponse(response, HttpServletResponse.SC_FORBIDDEN, "Token is invalid");
+            return;
         }
+
+        UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+
+        if (userDetails == null || !tokenService.isTokenValid(token, new UserDto(userDetails.getUsername()))) {
+            sendErrorResponse(response, HttpServletResponse.SC_FORBIDDEN, "Token is invalid or expired");
+            return;
+        }
+
+        UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+        authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+        SecurityContextHolder.getContext().setAuthentication(authToken);
+
         filterChain.doFilter(request, response);
+    }
+
+    private void sendErrorResponse(HttpServletResponse response, int status, String message) throws IOException {
+        response.setStatus(status);
+        response.setContentType("application/json");
+        response.setCharacterEncoding("UTF-8");
+        response.getWriter().write("{\"error\":\"" + message + "\"}");
     }
 }
