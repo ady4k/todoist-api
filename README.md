@@ -10,6 +10,7 @@ Create a `.env` file in the root folder with the following properties:
 * **CONNECTION_STRING_DOCKER** - connection string used by Docker. Value is typically `jdbc:postgresql://db:5432/<db_name>`.
 * **CONNECTION_DEFAULT** - default connection string in case app is started manually. Requires _online_ **postgres** container with the specified DB variables. Value is typically `jdbc:postgresql://localhost:5432/<db_name>`.
 * **SECRET_KEY** - secret used for validating JWT signature
+* **TOKEN_EXPIRATION_TIME_MILLIS** - self-explanatory
 
 The `.env` file then needs to be added in the Environmental variables field in IntelliJ. 
 
@@ -22,7 +23,7 @@ Use VM option `-Dspring.profiles.active=<profile>` in IntelliJ.
 
 ## Testing:
 Testing requires the `SECRET_KEY` environmental variable to be set manually in order to make sure the static utiliy class which manages JWTs has a signing key.
-
+The `TOKEN_EXPIRATION_TIME_MILLIS` variable is also needed in order to instantiate the caching class.
 It does not matter what you put there, just make sure it's long enough.
 
 ## Running the application:
