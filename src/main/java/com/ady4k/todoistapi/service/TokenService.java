@@ -2,7 +2,6 @@ package com.ady4k.todoistapi.service;
 
 import com.ady4k.todoistapi.dto.UserDto;
 import com.ady4k.todoistapi.security.JwtUtil;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.stereotype.Service;
@@ -13,13 +12,12 @@ import java.util.Date;
 @Service
 public class TokenService {
     private static final int TIME_LIMIT = 5 * 60 * 1000;
-    private final CacheService<String> cacheService;
+    private final CacheService<String, String> cacheService;
     private final UserDetailsService userDetailsService;
 
-    @Value("TOKEN_EXPIRATION_TIME")
-    private Duration cacheExpiration;
+    private final Duration cacheExpiration = Duration.ofMillis(Integer.parseInt(System.getenv("TOKEN_EXPIRATION_TIME_MILLIS")));
 
-    public TokenService(CacheService<String> cacheService, UserDetailsService userDetailsService) {
+    public TokenService(CacheService<String, String> cacheService, UserDetailsService userDetailsService) {
         this.cacheService = cacheService;
         this.userDetailsService = userDetailsService;
     }

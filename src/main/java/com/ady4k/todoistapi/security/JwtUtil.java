@@ -14,7 +14,7 @@ import java.util.Date;
 @UtilityClass
 public class JwtUtil {
     private static final String KEY = System.getenv("SECRET_KEY");
-    private static final int EXPIRY_TIME = Integer.parseInt(System.getenv("TOKEN_EXPIRATION_TIME"));
+    private static final int EXPIRY_TIME = Integer.parseInt(System.getenv("TOKEN_EXPIRATION_TIME_MILLIS"));
 
     public String generateToken(UserDto userDto) {
         return Jwts.builder()
