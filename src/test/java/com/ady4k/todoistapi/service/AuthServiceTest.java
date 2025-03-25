@@ -4,14 +4,11 @@ import com.ady4k.todoistapi.dto.AuthRequest;
 import com.ady4k.todoistapi.dto.UserDto;
 import com.ady4k.todoistapi.model.User;
 import com.ady4k.todoistapi.repository.UserRepository;
-import com.ady4k.todoistapi.security.JwtUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.MockedStatic;
-import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -36,6 +33,9 @@ class AuthServiceTest {
     @Mock
     private AuthenticationManager authenticationManager;
 
+    @Mock
+    private TokenService tokenService;
+
     private User user;
     private AuthRequest authRequest;
 
@@ -50,15 +50,13 @@ class AuthServiceTest {
         // Arrange
         String expected = "token";
         when(userRepository.findByUsername(any(String.class))).thenReturn(Optional.of(user));
-        try (MockedStatic<JwtUtil> jwtUtil = Mockito.mockStatic(JwtUtil.class)) {
-            jwtUtil.when(() -> JwtUtil.generateToken(any(UserDto.class))).thenReturn(expected);
+        when(tokenService.getOrCreateToken(any(UserDto.class))).thenReturn(expected);
 
-            // Act
-            String result = authService.loginByCredentials(authRequest);
+        // Act
+        String result = authService.loginByCredentials(authRequest);
 
-            // Assert
-            assertThat(result).isNotNull().isEqualTo(expected);
-        }
+        // Assert
+        assertThat(result).isNotNull().isEqualTo(expected);
     }
 
     @Test
