@@ -22,7 +22,6 @@ Use VM option `-Dspring.profiles.active=<profile>` in IntelliJ.
 
 ## Testing:
 Testing requires the `SECRET_KEY` environmental variable to be set manually in order to make sure the static utiliy class which manages JWTs has a signing key.
-
 It does not matter what you put there, just make sure it's long enough.
 
 ## Running the application:
