@@ -35,7 +35,7 @@ class UserServiceTest {
     private PasswordEncoder passwordEncoder;
 
     @Mock
-    private CacheService<String, UserDto> cacheService;
+    private MultiLayerCacheService cacheService;
 
     private UserDto userDto;
     private User user;

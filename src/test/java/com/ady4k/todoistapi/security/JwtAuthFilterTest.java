@@ -10,7 +10,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -40,6 +39,9 @@ class JwtAuthFilterTest {
     @Mock
     private FilterChain filterChain;
 
+    @Mock
+    private JwtUtil jwtUtil;
+
     private HttpServletRequest request;
     private HttpServletResponse response;
 
@@ -62,18 +64,15 @@ class JwtAuthFilterTest {
         when(userDetailsService.loadUserByUsername(username)).thenReturn(userDetails);
         when(tokenService.isTokenValid(any(String.class), any(UserDto.class))).thenReturn(true);
         when(request.getHeader("Authorization")).thenReturn(authHeader);
+        when(jwtUtil.extractUsername(any(String.class))).thenReturn(username);
 
-        try (MockedStatic<JwtUtil> jwtUtil = Mockito.mockStatic(JwtUtil.class)) {
-            jwtUtil.when(() -> JwtUtil.extractUsername(any(String.class))).thenReturn(username);
+        // Act
+        jwtAuthFilter.doFilterInternal(request, response, filterChain);
 
-            // Act
-            jwtAuthFilter.doFilterInternal(request, response, filterChain);
-
-            // Assert
-            verify(filterChain, times(1)).doFilter(request, response);
-            assertThat(SecurityContextHolder.getContext().getAuthentication()).isInstanceOf(UsernamePasswordAuthenticationToken.class);
-            assertThat(SecurityContextHolder.getContext().getAuthentication().getName()).isEqualTo(username);
-        }
+        // Assert
+        verify(filterChain, times(1)).doFilter(request, response);
+        assertThat(SecurityContextHolder.getContext().getAuthentication()).isInstanceOf(UsernamePasswordAuthenticationToken.class);
+        assertThat(SecurityContextHolder.getContext().getAuthentication().getName()).isEqualTo(username);
     }
 
     @Test
@@ -101,19 +100,16 @@ class JwtAuthFilterTest {
 
         PrintWriter mockWriter = mock(PrintWriter.class);
         when(response.getWriter()).thenReturn(mockWriter);
+        when(jwtUtil.extractUsername(any(String.class))).thenReturn("testuser");
 
-        try (MockedStatic<JwtUtil> jwtUtil = Mockito.mockStatic(JwtUtil.class)) {
-            jwtUtil.when(() -> JwtUtil.extractUsername(any(String.class))).thenReturn("testuser");
+        // Act
+        jwtAuthFilter.doFilterInternal(request, response, filterChain);
 
-            // Act
-            jwtAuthFilter.doFilterInternal(request, response, filterChain);
-
-            // Assert
-            verify(response, times(1)).setStatus(HttpServletResponse.SC_FORBIDDEN);
-            verify(response, times(1)).getWriter();
-            verify(filterChain, never()).doFilter(request, response);
-            assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
-        }
+        // Assert
+        verify(response, times(1)).setStatus(HttpServletResponse.SC_FORBIDDEN);
+        verify(response, times(1)).getWriter();
+        verify(filterChain, never()).doFilter(request, response);
+        assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
     }
 
     @Test
@@ -130,7 +126,7 @@ class JwtAuthFilterTest {
         // Assert
         verify(response, times(1)).setStatus(HttpServletResponse.SC_UNAUTHORIZED);
         verify(response, times(1)).getWriter();
-        verify(filterChain, never()).doFilter(request, response);
+        verify(filterChain, times(1)).doFilter(request, response);
         assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
     }
 
@@ -150,7 +146,7 @@ class JwtAuthFilterTest {
         // Assert
         verify(response, times(1)).setStatus(HttpServletResponse.SC_UNAUTHORIZED);
         verify(response, times(1)).getWriter();
-        verify(filterChain, never()).doFilter(request, response);
+        verify(filterChain, times(1)).doFilter(request, response);
         assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
     }
 }

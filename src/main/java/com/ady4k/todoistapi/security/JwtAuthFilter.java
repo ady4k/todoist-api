@@ -20,10 +20,12 @@ import java.io.IOException;
 public class JwtAuthFilter extends OncePerRequestFilter {
     private final UserDetailsService userDetailsService;
     private final TokenService tokenService;
+    private final JwtUtil jwtUtil;
 
-    public JwtAuthFilter(UserDetailsService userDetailsService, TokenService tokenService) {
+    public JwtAuthFilter(UserDetailsService userDetailsService, TokenService tokenService, JwtUtil jwtUtil) {
         this.userDetailsService = userDetailsService;
         this.tokenService = tokenService;
+        this.jwtUtil = jwtUtil;
     }
 
     @Override
@@ -41,7 +43,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         }
 
         String token = authHeader.substring(7);
-        String username = JwtUtil.extractUsername(token);
+        String username = jwtUtil.extractUsername(token);
 
         if (username == null) {
             sendErrorResponse(response, HttpServletResponse.SC_FORBIDDEN, "Token is invalid");

@@ -2,6 +2,7 @@ package com.ady4k.todoistapi.service;
 
 import com.ady4k.todoistapi.dto.UserDto;
 import com.ady4k.todoistapi.security.JwtUtil;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.stereotype.Service;
@@ -12,18 +13,22 @@ import java.util.Date;
 @Service
 public class TokenService {
     private static final int TIME_LIMIT = 5 * 60 * 1000;
-    private final CacheService<String, String> cacheService;
+    private final JwtUtil jwtUtil;
+    private final RedisCacheService<String> redisCacheService;
     private final UserDetailsService userDetailsService;
+    private final Duration cacheTtl;
 
-    private final Duration cacheExpiration = Duration.ofMillis(Integer.parseInt(System.getenv("TOKEN_EXPIRATION_TIME_MILLIS")));
-
-    public TokenService(CacheService<String, String> cacheService, UserDetailsService userDetailsService) {
-        this.cacheService = cacheService;
+    public TokenService(JwtUtil jwtUtil, RedisCacheService<String> redisCacheService,
+                        UserDetailsService userDetailsService,
+                        @Value("${token.expiration.time.minutes}") String tokenExpirationTimeMinutes) {
+        this.jwtUtil = jwtUtil;
+        this.redisCacheService = redisCacheService;
         this.userDetailsService = userDetailsService;
+        this.cacheTtl = Duration.ofMinutes(Long.parseLong(tokenExpirationTimeMinutes));
     }
 
     public String getOrCreateToken(UserDto userDto) {
-        String existingToken = cacheService.getFromCache(userDto.getUsername());
+        String existingToken = redisCacheService.get(userDto.getUsername());
 
         if (existingToken != null) {
             if (getRemainingTime(existingToken) > TIME_LIMIT) {
@@ -33,26 +38,26 @@ public class TokenService {
             }
         }
 
-        String createdToken = JwtUtil.generateToken(userDto);
-        cacheService.addToCache(userDto.getUsername(), createdToken, cacheExpiration);
+        String createdToken = jwtUtil.generateToken(userDto);
+        redisCacheService.put(userDto.getUsername(), createdToken, cacheTtl);
 
         return createdToken;
     }
 
     public void invalidateToken(UserDto userDto) {
-        cacheService.removeFromCache(userDto.getUsername());
+        redisCacheService.evict(userDto.getUsername());
     }
 
     public boolean isTokenValid(String token, UserDto userDto) {
-        if (cacheService.getFromCache(userDto.getUsername()) != null) {
+        if (redisCacheService.get(userDto.getUsername()) != null) {
             UserDetails userDetails = userDetailsService.loadUserByUsername(userDto.getUsername());
-            return JwtUtil.isTokenValid(token, userDetails);
+            return jwtUtil.isTokenValid(token, userDetails);
         }
         return false;
     }
 
     private long getRemainingTime(String token) {
         Date now = new Date();
-        return now.getTime() - JwtUtil.extractExpiration(token).getTime();
+        return now.getTime() - jwtUtil.extractExpiration(token).getTime();
     }
 }
