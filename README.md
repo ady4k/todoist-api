@@ -21,13 +21,14 @@ Use VM option `-Dspring.profiles.active=<profile>` in IntelliJ.
 2. **dev** - used when app is launched from Docker, uses PostgreSQL container. Must be configured correctly in `.env`.
 
 ## Testing:
-Testing requires the `SECRET_KEY` environmental variable to be set manually in order to make sure the static utiliy class which manages JWTs has a signing key.
-It does not matter what you put there, just make sure it's long enough.
+Just run `mvn test` and all should be good. Try to not implement features where testing will require environmental variables or other specific changes to Maven / IntelliJ configurations.
+
+You can also run the tests in IntelliJ by rightclicking and running tests on package `src/test/java`.
 
 ## Running the application:
 After configuring the app correctly using the steps above, the application can be ran directly in IntelliJ or use `docker-compose.yaml` to setup and use the dev container.
 
 1. `http://localhost:8080/register` - with a username & password body to add a user to the database.
 2. `http://localhost:8080/login` - with a username & password body to receive a JWT.
-3. `http://localhost:8080/api/users` - required a valid JWT, use `Authorization` header with `Bearer <your JWT>`.
+3. `http://localhost:8080/api/users` - requires a valid JWT, use `Authorization` header with `Bearer <your JWT>`.
 <br>For selecting a specific user, add `/{id}` after the initial URL.
